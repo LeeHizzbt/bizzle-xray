@@ -86,7 +86,7 @@
     var sys = system + (s.systemPrompt ? '\n\nUser preference: ' + s.systemPrompt : '');
     var msgs = o.messages || [{ role: 'user', text: text, images: images || [] }];
     return AI.chat({ provider: s.provider, model: s.model || '', effort: s.effort || 'Pro', messages: msgs, system: sys,
-      temperature: o.temperature != null ? o.temperature : s.temperature, maxTokens: Math.max(+s.maxTokens || 2048, o.minTokens || 0) });
+      temperature: o.temperature != null ? o.temperature : s.temperature, maxTokens: Math.max(+s.maxTokens || 2048, o.minTokens || 0), timeoutMs: o.timeoutMs });
   }
 
   /* ---------- router ---------- */
@@ -388,7 +388,7 @@
         blog('TESTER', 'found ' + (r.errors.length ? r.errors.length + ' error(s): ' + r.errors.slice(0, 3).join(' | ') : 'an empty or slow page'));
         if (attempt++ < 1 && hasKey() && label.indexOf('starter') < 0) {
           setStage('test', 'fail'); setStage('code', 'run'); blog('BUILDER', 'CODE · fixing and retrying once');
-          return callAI(BR.CLONE_SYS, 'This HTML app failed its test with: ' + (r.errors.join('\n') || 'empty page / no load event') + '\nFix it and return the full corrected HTML.\n\n```html\n' + code.slice(0, 60000) + '\n```', [], { minTokens: 16000, temperature: 0.3 }).then(function (x) { return cycle(BR.extractCode(x.text)); });
+          return callAI(BR.CLONE_SYS, 'This HTML app failed its test with: ' + (r.errors.join('\n') || 'empty page / no load event') + '\nFix it and return the full corrected HTML.\n\n```html\n' + code.slice(0, 60000) + '\n```', [], { minTokens: 16000, temperature: 0.3, timeoutMs: 200000 }).then(function (x) { return cycle(BR.extractCode(x.text)); });
         }
         setStage('test', 'fail'); $('#testResult').textContent = 'Test warnings: ' + (r.errors.join(' | ') || 'page looked empty') + '. You can still open it or ask for a change.'; return code;
       });
@@ -404,7 +404,7 @@
     if (!hasKey()) { toast('Add a free key in Advanced AI Settings (or use Instant starter)'); return; }
     var t = current;
     runPipeline(function () {
-      return callAI(BR.CLONE_SYS, (extra ? 'Request: ' + extra + '\n\n' : '') + 'Build an original app inspired by this teardown of ' + t.target + '.\n\n' + (t.report || '').slice(0, 14000) + (t.plan ? '\n\nREBUILD PLAN:\n' + t.plan.slice(0, 5000) : ''), (t.images || []).filter(function (i) { return i.base64; }).slice(0, 2).map(function (i) { return { mime: i.mime, base64: i.base64 }; }), { minTokens: 16000, temperature: 0.5 })
+      return callAI(BR.CLONE_SYS, (extra ? 'Request: ' + extra + '\n\n' : '') + 'Build an original app inspired by this teardown of ' + t.target + '.\n\n' + (t.report || '').slice(0, 14000) + (t.plan ? '\n\nREBUILD PLAN:\n' + t.plan.slice(0, 5000) : ''), (t.images || []).filter(function (i) { return i.base64; }).slice(0, 2).map(function (i) { return { mime: i.mime, base64: i.base64 }; }), { minTokens: 16000, temperature: 0.5, timeoutMs: 200000 })
         .then(function (r) { blog('BUILDER', 'code from ' + r.model + ' (' + (r.completionTokens || '?') + ' tokens)'); return BR.extractCode(r.text); });
     }, 'AI build');
   }
@@ -414,7 +414,7 @@
     var req = $('#buildTweak').value.trim(); if (!req) { toast('Describe the change first'); return; }
     if (!current.code) { buildAI(req); return; }
     if (!hasKey()) { toast('Changes need a free AI key'); return; }
-    runPipeline(function () { return callAI(BR.CLONE_SYS, 'Apply this change to the app and return the full updated HTML: ' + req + '\n\n```html\n' + current.code.slice(0, 60000) + '\n```', [], { minTokens: 16000, temperature: 0.4 }).then(function (r) { return BR.extractCode(r.text); }); }, 'change: ' + req);
+    runPipeline(function () { return callAI(BR.CLONE_SYS, 'Apply this change to the app and return the full updated HTML: ' + req + '\n\n```html\n' + current.code.slice(0, 60000) + '\n```', [], { minTokens: 16000, temperature: 0.4, timeoutMs: 200000 }).then(function (r) { return BR.extractCode(r.text); }); }, 'change: ' + req);
   };
   $$('.ptab').forEach(function (b) { b.onclick = function () { $$('.ptab').forEach(function (x) { x.classList.toggle('on', x === b); }); $$('.pp').forEach(function (p) { p.classList.toggle('on', p.getAttribute('data-pp') === b.getAttribute('data-p')); }); }; });
   $$('.vwb').forEach(function (b) { b.onclick = function () { $$('.vwb').forEach(function (x) { x.classList.toggle('on', x === b); }); var w = b.getAttribute('data-w'); $('#preview').style.width = w === '100%' ? '100%' : w + 'px'; }; });

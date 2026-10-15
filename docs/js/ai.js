@@ -144,7 +144,10 @@
       tries++;
       var req = buildRequest({ provider: provider, model: m, key: key, messages: opts.messages, system: opts.system,
         temperature: opts.temperature, maxTokens: opts.maxTokens, effort: opts.effort });
+      var ctl = null, timer = null, timedOut = false;
       if (opts.signal) req.init.signal = opts.signal;
+      else if (window.AbortController) { ctl = new AbortController(); req.init.signal = ctl.signal; timer = setTimeout(function () { timedOut = true; ctl.abort(); }, opts.timeoutMs || 120000); }
+      var clear = function () { if (timer) clearTimeout(timer); };
       return fetch(req.url, req.init).then(function (r) {
         return r.text().then(function (raw) {
           if (!r.ok) {
@@ -165,7 +168,13 @@
           out.estimated = estimated; out.provider = provider; out.model = out.model || m; out.requestedModel = m;
           return out;
         });
-      }, function (err) {
+      }).then(function (v) { clear(); return v; }, function (err) { clear(); throw err; }).catch(function (err) {
+        if (err && err.name === 'AbortError' && timedOut) {
+          var fb2 = (PROVIDERS[provider].fallback || {})[m];
+          if (fb2 && tries < 4) return attempt(fb2);
+          throw AIError(PROVIDERS[provider].label + ' took too long (timeout). Try again or pick a Fast tier.', 0, provider, m);
+        }
+        if (err && err.provider) throw err;
         if (err && err.name === 'AbortError') throw err;
         throw AIError('Network error calling ' + PROVIDERS[provider].label + ' (offline or blocked by CORS). ' + (err && err.message || ''), 0, provider, m);
       });

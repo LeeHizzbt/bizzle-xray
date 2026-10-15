@@ -1,7 +1,7 @@
 /* Bizzle X-Ray v4.20 service worker. CACHE changes on every build (scripts/bump-version.sh) so old caches are busted. */
-var CACHE = 'bizzle-xray-2026-10-15.1';
-var SHELL = ['./', 'index.html', 'launch.html', 'css/app.css?v=2026-10-15.1', 'js/config.js?v=2026-10-15.1', 'js/ai.js?v=2026-10-15.1', 'js/scan.js?v=2026-10-15.1',
-  'js/brain.js?v=2026-10-15.1', 'js/app.js?v=2026-10-15.1', 'vendor/jszip.min.js?v=3.10.2', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon.svg'];
+var CACHE = 'bizzle-xray-2026-10-15.2';
+var SHELL = ['./', 'index.html', 'launch.html', 'css/app.css?v=2026-10-15.2', 'js/config.js?v=2026-10-15.2', 'js/ai.js?v=2026-10-15.2', 'js/scan.js?v=2026-10-15.2',
+  'js/brain.js?v=2026-10-15.2', 'js/app.js?v=2026-10-15.2', 'vendor/jszip.min.js?v=3.10.2', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon.svg'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }));
 });
