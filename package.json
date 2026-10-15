@@ -1,0 +1,18 @@
+{
+  "name": "bizzle-xray",
+  "version": "4.20.0",
+  "private": true,
+  "description": "Bizzle X-Ray v4.20: free reverse-engineering teardown PWA + Capacitor Android shell",
+  "license": "MIT",
+  "scripts": {
+    "android:sync": "npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/filesystem": "^7.1.0",
+    "@capacitor/share": "^7.0.0"
+  }
+}

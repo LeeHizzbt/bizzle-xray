@@ -1,0 +1,16 @@
+{
+  "name": "Bizzle X-Ray v4.20",
+  "short_name": "X-Ray v4.20",
+  "description": "Reverse engineer any website, screenshot or app package: stack, design system, features, APIs, rebuild plan, clone code and prompts.",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050806",
+  "theme_color": "#050806",
+  "orientation": "any",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

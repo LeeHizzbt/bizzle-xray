@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en" data-theme="neon">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bizzle X-Ray v4.20 · Reverse engineer anything</title>
+<meta name="description" content="Free reverse-engineering teardowns: paste a URL, screenshot or app package and get the stack, design system, structure, features, APIs, a rebuild plan, original clone code and copyable prompts.">
+<meta name="theme-color" content="#050806">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/app.css?v=2026-10-15.1">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#/" aria-label="Bizzle X-Ray home"><span class="logo">⦿</span><span class="bname">Bizzle X-Ray</span><span class="ver neon">v4.20</span></a>
+  <nav class="topnav">
+    <a href="#/vault" class="tb" title="Teardown vault">🗄️<span>Vault</span></a>
+    <a href="#/about" class="tb" title="How it works">❔<span>How</span></a>
+    <button class="tb" id="themeCycle" title="Cycle AI color theme">🎨<span>Theme</span></button>
+    <a href="#/settings" class="tb adv" id="advBtn" title="Advanced AI Settings">⚙️<span>Advanced AI Settings</span></a>
+  </nav>
+</header>
+
+<main id="app">
+  <!-- HOME -->
+  <section class="view" data-view="home">
+    <div class="vhead"><button class="back" data-back>◀ Back</button><h1 class="vtitle">Give your AI <em>X-ray</em> vision.</h1></div>
+    <p class="lead">Point it at a website, a screenshot or an app package. Bizzle X-Ray watches what it sends, reads the code, lists what it loads, names the stack with evidence, then writes the teardown, a rebuild plan, original clone code and copyable prompts.</p>
+    <div class="cmdbar card">
+      <button class="mic" id="micBtn" title="Speak a command (e.g. “reverse engineer stripe.com”)">🎙️</button>
+      <input id="cmd" placeholder="Say or type: reverse engineer stripe.com" autocomplete="off" aria-label="Command">
+      <button class="btn" id="cmdGo">Go</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="url" role="tab">🌐 Website</button>
+      <button class="tab" data-tab="shot" role="tab">🖼️ Screenshot</button>
+      <button class="tab" data-tab="pkg" role="tab">📦 App / package</button>
+      <button class="tab" data-tab="code" role="tab">&lt;/&gt; Paste code</button>
+    </div>
+    <div class="card tabpane on" data-pane="url">
+      <label for="urlIn">Website URL</label>
+      <div class="row"><input id="urlIn" placeholder="igloo.inc or https://example.com" inputmode="url" autocomplete="url"><button class="btn big" id="scanUrl">🔍 Reverse engineer</button></div>
+      <label for="askIn">What do you want to know? (optional)</label>
+      <input id="askIn" placeholder="How does the scroll effect work?">
+      <div class="chips"><span class="muted">Try:</span><button class="chip" data-try="example.com">example.com</button><button class="chip" data-try="igloo.inc">igloo.inc</button><button class="chip" data-try="threejs.org">threejs.org</button><button class="chip" data-try="svelte.dev">svelte.dev</button></div>
+    </div>
+    <div class="card tabpane" data-pane="shot">
+      <label>Screenshot(s) of an app or site</label>
+      <div class="drop" id="shotDrop" tabindex="0">📸 Drop, paste or <u>choose</u> images (PNG/JPG/WebP)<input type="file" id="shotFile" accept="image/*" multiple hidden></div>
+      <div class="thumbs" id="shotThumbs"></div>
+      <input id="shotAsk" placeholder="What is this and how would I rebuild it?">
+      <button class="btn big" id="scanShot">🔍 Tear down screenshot</button>
+    </div>
+    <div class="card tabpane" data-pane="pkg">
+      <label>App package or bundle</label>
+      <div class="drop" id="pkgDrop" tabindex="0">📦 Drop or <u>choose</u> an .apk, .ipa, .zip (e.g. a zipped .app), .jar, .asar, .js, .css, .html<input type="file" id="pkgFile" hidden></div>
+      <p class="muted small">Inspected locally in your browser. Nothing is uploaded unless you ask the AI to write the teardown (then only the evidence summary is sent).</p>
+      <button class="btn big" id="scanPkg" disabled>🔍 Tear down package</button>
+    </div>
+    <div class="card tabpane" data-pane="code">
+      <label for="codeIn">Paste HTML, CSS or JS</label>
+      <textarea id="codeIn" rows="8" placeholder="&lt;html&gt;… or a JS bundle snippet"></textarea>
+      <button class="btn big" id="scanCode">🔍 Tear down code</button>
+    </div>
+    <div class="howstrip">
+      <div class="hs"><b>1 · You ask</b><span>“How does this site do that?”</span></div>
+      <div class="hs"><b>2 · Your AI</b><span>plans the investigation</span></div>
+      <div class="hs hl"><b>3 · X-Ray</b><span>reads the code it downloads, logs every file it loads</span></div>
+      <div class="hs"><b>4 · Evidence</b><span>what it’s built with, how it works, what it couldn’t see</span></div>
+    </div>
+    <h2 class="sub">Recent teardowns</h2>
+    <div id="recent" class="list"></div>
+  </section>
+
+  <!-- SCAN PROGRESS -->
+  <section class="view" data-view="scan">
+    <div class="vhead"><button class="back" data-back>◀ Back</button><h1 class="vtitle"><span class="tag">TEARDOWN</span> <span id="scanTarget"></span></h1></div>
+    <div class="card teardown">
+      <ul id="steps" class="steps"></ul>
+      <div class="pbar"><i id="pfill"></i></div>
+      <pre id="scanLog" class="log" aria-live="polite"></pre>
+      <div class="row"><button class="btn ghost" id="cancelScan">Cancel</button></div>
+    </div>
+  </section>
+
+  <!-- REPORT -->
+  <section class="view" data-view="report">
+    <div class="vhead"><button class="back" data-back>◀ Back</button><h1 class="vtitle"><span class="tag">TEARDOWN</span> <span id="rTitle"></span></h1></div>
+    <div class="actions">
+      <button class="btn" id="goPlan">🧭 Rebuild plan</button>
+      <button class="btn" id="goBuild">🛠️ Build my version</button>
+      <button class="btn" id="goPrompts">💬 Prompts</button>
+      <button class="btn ghost" id="readAloud">🔊 Read it to me</button>
+      <button class="btn ghost" id="aiRewrite">✨ Write with AI</button>
+      <button class="btn ghost" id="dlMd">⬇️ .md</button>
+      <button class="btn ghost" id="obsidian">🟣 Open in Obsidian</button>
+    </div>
+    <div class="card report">
+      <div class="rmeta" id="rMeta"></div>
+      <img id="rShot" class="rshot" alt="Screenshot of the target" loading="lazy">
+      <div class="reply" id="rBody"></div>
+    </div>
+    <details class="card raw"><summary>Raw evidence data (JSON)</summary><div class="reply"><pre id="rRaw"></pre></div></details>
+  </section>
+
+  <!-- PLAN -->
+  <section class="view" data-view="plan">
+    <div class="vhead"><button class="back" data-back>◀ Back</button><h1 class="vtitle">🧭 Rebuild plan · <span id="pTitle"></span></h1></div>
+    <div class="actions"><button class="btn" id="planAi">✨ Generate with AI</button><button class="btn ghost" id="planToBuild">🛠️ Build it</button></div>
+    <div class="card"><div class="reply" id="planBody"></div></div>
+  </section>
+
+  <!-- BUILD -->
+  <section class="view" data-view="build">
+    <div class="vhead"><button class="back" data-back>◀ Back</button><h1 class="vtitle">🛠️ Build · <span id="bTitle"></span></h1></div>
+    <div class="card buildp">
+      <div class="blog" id="bLog"></div>
+      <div class="stages"><span data-st="scaffold">SCAFFOLD</span><span data-st="code">CODE</span><span data-st="test">TEST</span><span data-st="launch">LAUNCH</span></div>
+      <div class="row wrap">
+        <button class="btn" id="buildAi">✨ Build with AI</button>
+        <button class="btn ghost" id="buildLocal">⚡ Instant starter (no AI)</button>
+        <input id="buildTweak" placeholder="Change request, e.g. “add a dark mode toggle”">
+        <button class="btn ghost" id="buildIterate">↻ Apply change</button>
+      </div>
+    </div>
+    <div class="previewWrap card">
+      <div class="ptabs"><button class="ptab on" data-p="preview">Preview</button><button class="ptab" data-p="source">Code</button>
+        <span class="vw"><button class="vwb" data-w="360">📱</button><button class="vwb" data-w="768">📟</button><button class="vwb on" data-w="100%">🖥️</button></span></div>
+      <div class="pp on" data-pp="preview"><iframe id="preview" title="Sandboxed preview" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe></div>
+      <div class="pp reply" data-pp="source"><pre id="srcView"></pre></div>
+      <div class="actions"><button class="btn" id="openWin">🪟 Open as its own window</button><button class="btn ghost" id="dlHtml">⬇️ Download .html</button><button class="btn ghost" id="cpHtml">📋 Copy code</button></div>
+      <p class="muted small" id="testResult"></p>
+    </div>
+  </section>
+
+  <!-- PROMPTS -->
+  <section class="view" data-view="prompts">
+    <div class="vhead"><button class="back" data-back>◀ Back</button><h1 class="vtitle">💬 Prompts · <span id="prTitle"></span></h1></div>
+    <p class="lead">Copy any prompt into Claude Code, Cursor, Grok, Lovable, Bolt or your own assistant.</p>
+    <div id="promptList" class="list"></div>
+  </section>
+
+  <!-- VAULT -->
+  <section class="view" data-view="vault">
+    <div class="vhead"><button class="back" data-back>◀ Back</button><h1 class="vtitle">🗄️ Teardown vault</h1></div>
+    <div class="row wrap"><input id="vSearch" placeholder="Search your teardowns"><button class="btn ghost" id="vExport">⬇️ Export all</button><label class="btn ghost filebtn">⬆️ Import<input type="file" id="vImport" accept="application/json" hidden></label></div>
+    <div id="vaultList" class="list"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" data-view="settings">
+    <div class="vhead"><button class="back" data-back>◀ Back</button><h1 class="vtitle">⚙️ Advanced AI Settings</h1></div>
+    <div class="card form">
+      <p class="muted small">Bring your own free key. Keys are saved only in this device’s localStorage and are sent only to the provider you pick. Without a key, X-Ray still runs every scan and writes a local teardown.</p>
+      <label for="sProvider">Provider</label>
+      <select id="sProvider"><option value="gemini">Google Gemini (free tier, default)</option><option value="groq">Groq (free tier)</option><option value="openrouter">OpenRouter (free models)</option></select>
+      <div id="keyRows"></div>
+      <label for="sEffort">Effort tier</label>
+      <select id="sEffort"><option>Fast</option><option selected>Pro</option><option>Max</option></select>
+      <p class="muted small" id="tierInfo"></p>
+      <label for="sModel">Model (optional override)</label>
+      <div class="row"><select id="sModel"><option value="">Auto (by tier)</option></select><button class="btn ghost" id="loadModels">↻ Live list</button></div>
+      <label for="sTemp">Temperature <b id="sTempV"></b></label>
+      <input type="range" id="sTemp" min="0" max="1.5" step="0.1">
+      <label for="sMax">Max output tokens</label>
+      <input type="number" id="sMax" min="256" max="65536" step="256">
+      <label for="sSys">Extra instructions for every AI call</label>
+      <textarea id="sSys" rows="3" placeholder="e.g. Explain like I'm new to coding"></textarea>
+      <label>AI color theme</label>
+      <div class="swatches" id="swatches"></div>
+      <label class="check"><input type="checkbox" id="sVoice"> Speak short summaries out loud after a teardown</label>
+      <label for="sScripts">Scripts to fetch per scan</label>
+      <input type="number" id="sScripts" min="0" max="15">
+      <div class="row wrap"><button class="btn" id="saveSet">💾 Save</button><button class="btn ghost" id="testKey">🧪 Test key</button><button class="btn ghost danger" id="wipe">🗑️ Clear all local data</button></div>
+      <p class="muted small" id="setMsg" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="view" data-view="about">
+    <div class="vhead"><button class="back" data-back>◀ Back</button><h1 class="vtitle">❔ How X-Ray works</h1></div>
+    <div class="card reply">
+      <h3>Not a guess. The recipe.</h3>
+      <ol>
+        <li><b>Website:</b> fetches the page through free CORS readers (AllOrigins → CodeTabs → Jina Reader), gets a rendered snapshot, screenshot and Wappalyzer tech list from Microlink’s free tier (or a thum.io screenshot), then downloads the main JS bundles and stylesheets.</li>
+        <li><b>Reads the code:</b> about 110 fingerprints for frameworks, 3D/animation libraries, analytics, payments and build tools; versions where the code shows them; endpoint, route, source-map, storage-key and AI-prompt candidates.</li>
+        <li><b>Design system:</b> color frequency, CSS variables, fonts, type and spacing scales, radii, breakpoints, keyframes, and the screenshot palette.</li>
+        <li><b>Apps:</b> APK (manifest strings, permissions, dex packages, Flutter / React Native / Capacitor / Unity / Xamarin detection), IPA and zipped macOS .app (Info.plist, Mach-O type, linked frameworks, extensions), ASAR, JAR, browser extensions, single files.</li>
+        <li><b>Screenshots:</b> measured palette plus an AI vision teardown.</li>
+        <li><b>AI (optional, your free key):</b> writes the teardown in REA-style sections, a rebuild plan, an original clone (tested in a hidden sandbox before launch) and a prompt pack.</li>
+      </ol>
+      <h3>No hacking. Learning only.</h3>
+      <p>X-Ray reads only what a site already sends to any browser, or files you own. Use it for learning, interoperability and inspiration. Rebuilds must be original: don’t copy names, logos, trademarks, text, images or other copyrighted assets, and respect each site’s terms and each app’s license.</p>
+      <h3>Credits</h3>
+      <p>Inspired by <a href="https://github.com/morluto/rea" target="_blank" rel="noopener">REA – Reverse Engineer Anything</a> (MIT). Uses <a href="https://stuk.github.io/jszip/" target="_blank" rel="noopener">JSZip</a> (MIT), AllOrigins, Microlink, thum.io, Jina Reader and CodeTabs (free public services; availability not guaranteed).</p>
+      <p class="muted small">Build <span id="buildId"></span></p>
+    </div>
+  </section>
+</main>
+
+<!-- Bizzy Bot bubble -->
+<button id="bizzyBtn" class="bizzy-btn" aria-label="Open Bizzy Bot helper">🤖<span class="dot"></span></button>
+<div id="bizzy" class="bizzy" hidden role="dialog" aria-label="Bizzy Bot">
+  <div class="bz-head"><button class="back" id="bzBack">◀ Back</button><b>Bizzy Bot</b> <span class="neon small">v4.20</span><button class="bz-x" id="bzMem" title="Memory">🧠</button><button class="bz-x" id="bzClose" title="Close">✕</button></div>
+  <div class="bz-mem" id="bzMemPane" hidden>
+    <div class="muted small">Bizzy remembers these across visits (stored on this device). Say “remember …” to add.</div>
+    <ul id="bzMemList"></ul>
+    <div class="row"><input id="bzMemIn" placeholder="Add a memory"><button class="btn ghost" id="bzMemAdd">+</button><button class="btn ghost danger" id="bzMemClear">Clear</button></div>
+  </div>
+  <div class="bz-msgs" id="bzMsgs"></div>
+  <div class="thumbs" id="bzThumbs"></div>
+  <div class="bz-in">
+    <label class="bz-att" title="Attach screenshot">📎<input type="file" id="bzFile" accept="image/*" multiple hidden></label>
+    <textarea id="bzText" rows="1" placeholder="Ask Bizzy… (paste screenshots too)"></textarea>
+    <button class="btn" id="bzSend">➤</button>
+  </div>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<div id="winOverlay" class="winov" hidden><div class="winbar"><button class="back" id="winBack">◀ Back</button><b id="winTitle">App</b></div><iframe id="winFrame" title="Launched app" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe></div>
+
+<script src="js/config.js?v=2026-10-15.1"></script>
+<script src="vendor/jszip.min.js?v=3.10.2"></script>
+<script src="js/ai.js?v=2026-10-15.1"></script>
+<script src="js/scan.js?v=2026-10-15.1"></script>
+<script src="js/brain.js?v=2026-10-15.1"></script>
+<script src="js/app.js?v=2026-10-15.1"></script>
+</body>
+</html>

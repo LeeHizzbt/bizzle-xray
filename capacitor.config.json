@@ -1,0 +1,7 @@
+{
+  "appId": "com.nunyabizz.xray",
+  "appName": "Bizzle X-Ray",
+  "webDir": "docs",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}
